@@ -655,5 +655,75 @@ let rec zip_raw : type a b. a stream -> b stream -> (a * b) stream =
    | (st1, st2) -> 
        if linearize_score st2 > linearize_score st1
        then zip_raw (linearize st1) st2 else zip_raw st1 (linearize st2)
+
+let merge_emit : ('a -> 'a -> bool cde) -> goon -> 'a emit -> goon -> 'b emit -> 'c = fun pred g1 i1 g2 i2 ->
+    let init1 =
+      let r = ref None in
+      ignore (i1 (fun x -> (if !r = None then r := Some x); C.unit)); !r
+    in
+    let init2 =
+      let r = ref None in
+      ignore (i2 (fun x -> (if !r = None then r := Some x); C.unit)); !r
+    in
+    match init1 with
+      (* If step never calls its continuation, it is an empty stream *)
+    | None -> assert false
+(*     Flat (Linear, GTrue, Unroll (fun k -> C.unit)) *)
+    | Some init1 ->
+    match init2 with
+    | None -> assert false
+    | Some init2 ->
+    initializing_ref C.(bool false) @@ fun has1 ->
+    initializing_ref C.(bool false) @@ fun has2 ->
+    initializing_uref init1 @@ fun keep1 ->
+    initializing_uref init2 @@ fun keep2 ->
+    Flat (Linear, goon_disj g1 g2, Unroll C.(fun k ->
+      let emit1 = seq (k (dref keep1)) (has1 := bool false) in
+      let emit2 = seq (k (dref keep2)) (has2 := bool false) in
+      seq (if1 (cde_of_goon g1 && not (dref has1)) (i1 (fun x -> seq (keep1 := x) (has1 := bool true))))
+      @@ seq (if1 (cde_of_goon g2 && not (dref has2)) (i2 (fun x -> seq (keep2 := x) (has2 := bool true))))
+      @@
+      if_ (dref has1)
+        (if_ (dref has2)
+          (if_ (pred (dref keep1) (dref keep2)) emit1 emit2)
+          emit1)
+        (if1 (dref has2) emit2)
+    ))
+
+(*
+let merge_pull_array : 'pred -> 'a pull_array -> 'a pull_array -> 'a pull_array =
+  fun pred p1 p2 ->
+   {upb  = C.(+) (p1.upb) (p2.upb);
+   index = (fun i -> merge_emit GTrue pred (p1.index i)  (p2.index i))}
+*)
+
+let rec merge_raw : type a. (a cde -> a cde -> bool cde) -> a cde stream -> a cde stream -> a cde stream =
+  fun pred st1 st2 ->
+    match st1, st2 with
+   | (Init (init, sk),st2)  -> Init (init, fun z -> merge_raw pred (sk z) st2)
+   | (st1,Init (init, sk))  -> Init (init, fun z -> merge_raw pred st1 (sk z))
+
+   (* Only zipping of two For is special; in other cases, convert For to While*)
+(*
+   | (Flat (Linear,g1,For pa1), Flat (Linear,g2,For pa2)) -> assert false
+       Flat (Linear, goon_conj g1 g2, For (zip_pull_array pa1 pa2))
+*)
+   | (Flat ((Linear,_,For _) as sf1), st2) -> merge_raw pred (for_unfold sf1) st2
+   | (st1, Flat ((Linear,_,For _) as sf2)) -> merge_raw pred st1 (for_unfold sf2)
+
+   | (Flat (Linear,g1,Unroll s1), Flat (Linear,g2,Unroll s2)) -> merge_emit pred g1 s1 g2 s2
+
+(*
+   (* zipping with a stream that is linear *)
+   | (Flat (Linear, g, Unroll s), st2) -> 
+       guard g @@ map_raw (fun y k -> s (fun x -> k (x,y))) st2
+   | (_, Flat (Linear,_,_)) -> zip_raw st2 st1 |> swap  
+*)
+
+    (* If both streams are non-linear, make one of them linear *)
+   | (st1, st2) -> 
+       if linearize_score st2 > linearize_score st1
+       then merge_raw pred (linearize st1) st2 else merge_raw pred st1 (linearize st2)
+
 end
 ;;
