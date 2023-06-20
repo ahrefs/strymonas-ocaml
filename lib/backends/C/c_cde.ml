@@ -778,3 +778,7 @@ let cde_app2 : type a b. string -> 'c tbase -> a cde -> b cde -> 'c cde =
         {vars;inits;desc}
       )
     | _ -> failwith "not supported"
+
+let get31 _ = assert false
+let get32 _ = assert false
+let get33 _ = assert false

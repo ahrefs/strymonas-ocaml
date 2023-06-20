@@ -113,3 +113,4 @@ val flat_map_raw : ('a cde -> 'b stream) -> 'a cde stream ->
 val zip_raw    : 'a stream -> 'b stream -> ('a * 'b) stream
 
 val merge_raw : ('a cde -> 'a cde -> bool cde) -> 'a cde stream -> 'a cde stream -> 'a cde stream
+val merge_map_raw : ('a cde -> 'c cde) -> ('b cde -> 'c cde) -> ('a cde -> 'b cde -> (bool * bool * 'c) cde) -> 'a cde stream -> 'b cde stream -> 'c cde stream

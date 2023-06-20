@@ -127,3 +127,7 @@ val is_static : 'a cde -> bool
    It may always return true.
  *)
 val is_fully_dynamic : 'a cde -> bool
+
+val get31 : ('a * 'b * 'c) cde -> 'a cde
+val get32 : ('a * 'b * 'c) cde -> 'b cde
+val get33 : ('a * 'b * 'c) cde -> 'c cde

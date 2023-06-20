@@ -330,4 +330,8 @@ let time : unit cde -> float cde = fun x -> inj @@ C.time (dyn x)
 
 *)
 
+let get31 x = inj1 C.get31 x
+let get32 x = inj1 C.get32 x
+let get33 x = inj1 C.get33 x
+
 end

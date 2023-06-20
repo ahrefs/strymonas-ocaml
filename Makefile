@@ -1,3 +1,7 @@
+q:
+	$(MAKE) lib reinstall
+	metaocaml q.ml
+
 .PHONY: all 
 all: check-compiler lib
 

@@ -273,3 +273,7 @@ let cde_app1 : ('a -> 'b) code -> 'a cde -> 'b cde = fun f x ->
   (fun x' -> .< .~f .~x' >.) x
 
 let time : unit cde -> float cde = fun unit -> .<Sys.time ()>.
+
+let get31 x = .<let (a,_,_) = .~x in a>.
+let get32 x = .<let (_,b,_) = .~x in b>.
+let get33 x = .<let (_,_,c) = .~x in c>.
